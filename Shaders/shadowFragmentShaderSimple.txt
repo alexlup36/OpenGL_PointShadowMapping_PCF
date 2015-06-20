@@ -1,0 +1,36 @@
+#version 330 core
+
+//uniform sampler2DShadow shadowMap;
+uniform sampler2D shadowMap;
+
+in vec4 vertexPositionLightSpace;
+
+out vec4 color;
+
+void main()
+{
+	float shadowValue;
+	vec4 vertexPositionLightSpace2 = vertexPositionLightSpace;
+	
+	// Perspective division
+	vertexPositionLightSpace2 /= vertexPositionLightSpace2.w;
+	
+	// Percentage closer filtering
+	for (float x = -0.01f; x <= 0.01f; x += 0.0025f)
+	{
+		for (float y = -0.01f; y <= 0.01f; y += 0.0025f)
+		{
+			if (texture2D(shadowMap, vertexPositionLightSpace2.xy + vec2(x, y)).r >= vertexPositionLightSpace2.z)
+			{
+				shadowValue += 1.0f;
+			}
+		}
+	}
+	
+	shadowValue /= 64.0f;
+	
+	// r = 1.0 not in shadow; r = 0.0 it's in shadow
+	//float shadowValue = shadow2DProj(shadowMap, vertexPositionLightSpace).r;
+	
+	color = vec4(shadowValue, shadowValue, shadowValue, 1.0f);
+}

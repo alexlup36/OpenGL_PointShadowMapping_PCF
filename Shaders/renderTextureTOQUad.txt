@@ -1,0 +1,27 @@
+glDisable(GL_DEPTH_TEST);
+	// Render the quad (to screen)
+	quadShader->Enable();
+	glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+	
+	GetActiveCamera()->LoadIndentity();
+	GetActiveCamera()->SetOrthoProjection(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
+//	GetActiveCamera()->SetView();
+
+	glm::mat4 MVP = GetActiveCamera()->ProjectionMatrix() *
+		GetActiveCamera()->ViewMatrix() * glm::mat4(1.0f);
+
+	printMat4(GetActiveCamera()->ViewMatrix());
+	std::cout<<std::endl;
+
+	glUniformMatrix4fv(glGetUniformLocation(quadShader->ProgramID(), "MVP"), 1, GL_FALSE, &MVP[0][0]); 
+
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, shadowMapTexture);
+	glUniform1i(glGetUniformLocation(quadShader->ProgramID(), "sampler"), 0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	quadToRenderTo->Display();
+	quadShader->Disable();
+
+	glEnable(GL_DEPTH_TEST);

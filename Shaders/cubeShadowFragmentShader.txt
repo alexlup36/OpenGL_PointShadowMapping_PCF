@@ -1,0 +1,228 @@
+#version 330 core
+
+// Declaration ***********************************
+struct DirectionalLight
+{
+	vec3 Color;
+	float AmbientIntensity;
+	vec3 Direction;
+	float DiffuseIntensity;
+};
+
+struct PointLight
+{
+	// Point light
+	vec3 Position;
+	vec3 Color;
+	float AmbientIntensity;
+	float DiffuseIntensity;
+	
+	// Attenuation
+	float Constant;                                                                 
+    float Linear;                                                                   
+    float Exp; 
+};
+
+
+// Uniform variables *****************************
+uniform sampler2D shadowMap;		// Sampler for the shadow map
+uniform int NumPointLights; 		// Number of point lights
+uniform sampler2D sampler;			// Sampler for the future texture	ok
+uniform samplerCubeShadow cubeDepthMap;	// Sampler for the depth cube map
+//uniform samplerCubeShadow cubeDepthMap;
+
+uniform DirectionalLight directionalLight;		// Structure which stores the properties of the directional light	ok
+uniform PointLight PointLights[3];				// Structure which stores the properties of the point lights	ok
+
+uniform vec3 eyePosition;				// Position of the eye in world space (position of the camera)	ok
+uniform float specularIntensity;		// Specular property	ok
+uniform float specularPower;			// Specular property	ok
+
+
+// Input data ************************************
+in vec4 vertexPositionLightSpace; 	// Vertex position in light space	ok
+in vec2 TexCoord0;					// 	ok
+in vec3 Normal0;					// Normal position in world space	ok
+in vec3 Position0;					// Vertex position in world space	ok
+in vec3 VertexModelSpace;
+in mat4 lightMatrix;
+
+
+// Output data ***********************************
+out vec4 color;
+
+
+// Functions *************************************
+
+float VectorToDepthValue(vec3 Vec)
+{
+    vec3 AbsVec = abs(Vec);
+    float LocalZcomp = max(AbsVec.x, max(AbsVec.y, AbsVec.z));
+
+    const float f = 1000.0f;
+    const float n = 1.0f;
+    float NormZComp = (f+n) / (f-n) - (2*f*n)/(f-n)/LocalZcomp;
+    return (NormZComp + 1.0) * 0.5;
+}
+
+float ComputeShadowFactor(samplerCubeShadow ShadowCubeMap, vec3 VertToLightWS)
+{   
+	float ShadowVec = texture(ShadowCubeMap, vec4(VertToLightWS, 1.0f));
+    if (ShadowVec + 0.8f > VectorToDepthValue(VertToLightWS))
+        return 1.0f;
+
+    return 0.0f;
+}
+
+vec4 LightCalculation(vec3 color,
+	float ambientIntensity,
+	float diffuseIntensity,
+	vec3 direction,
+	int lightIndex)
+{
+	vec4 fragmentColor = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+	
+	// Normalize the normal from the vertex shader
+	vec3 normal = normalize(Normal0);
+	// Light direction
+	vec3 lightDir = normalize(direction);
+
+	// Calculate the ambient component
+	vec4 AmbientColor = vec4(color, 1.0f) * ambientIntensity;
+	
+	// Calculate the diffuse component
+	// Calculate the diffuse factor
+	float diffuseFactor = dot(normalize(Normal0), -lightDir);
+	vec4 DiffuseColor = vec4(color, 1.0f) * diffuseIntensity * max(diffuseFactor, 0.0f);
+	
+	// Calculate the specular component
+	vec3 vertexToEye = normalize(eyePosition - Position0);
+	vec3 reflection = normalize(reflect(lightDir, normal));
+	float specularFactor = max(dot(vertexToEye, reflection), 0.0f);
+	specularFactor = pow(specularFactor, specularPower);
+	vec4 SpecularColor = vec4(color, 1.0f)  * specularFactor * specularIntensity;
+	
+	// Shadow factor calculation
+	float shadowValue;
+	vec4 vertexPositionLightSpace2 = vertexPositionLightSpace;
+	
+	// Perspective division
+	vertexPositionLightSpace2 /= vertexPositionLightSpace2.w;
+	
+	// Percentage closer filtering
+	/*for (float x = -0.01f; x <= 0.01f; x += 0.005f)
+	{
+		for (float y = -0.01f; y <= 0.01f; y += 0.005f)
+		{
+			if (texture2D(shadowMap, vertexPositionLightSpace2.xy + vec2(x, y)).r >= vertexPositionLightSpace2.z)
+			{
+				shadowValue += 1.0f;
+			}
+		}
+	}
+	
+	shadowValue /= 16.0f;*/
+	
+	float shadow = texture(cubeDepthMap, -vertexPositionLightSpace).x;
+    if (shadow + 0.0001f < vertexPositionLightSpace.z) {
+      shadowValue = 1.0f;
+    }
+	
+	
+	
+	
+	
+	// Without percentage closer filtering
+	
+	//if (texture(cubeDepthMap, vec4(-lightDir, 1.0f)).r >= vertexPositionLightSpace2.z)
+	/*float cubeMapSample = texture(cubeDepthMap, vec4(direction, 1.0f));
+	if (cubeMapSample.r >= VectorToDepthValue(direction))
+	{
+		shadowValue = 1.0f;
+	}
+	else
+	{
+		shadowValue = 0.0f;
+	}*/
+	
+	//shadowValue = ComputeShadowFactor(cubeDepthMap, -direction);
+	
+	DiffuseColor *= (shadowValue + 0.05f);
+	SpecularColor = (shadowValue < 0.5f ? vec4(0.0f, 0.0f, 0.0f, 1.0f) : SpecularColor);
+	
+	//color = vec4(shadowValue, shadowValue, shadowValue, 1.0f);	
+	//return vec4(shadowValue, shadowValue, shadowValue, 1.0f);	
+	
+	// Final color of the fragment
+	fragmentColor = AmbientColor + DiffuseColor + SpecularColor;
+	fragmentColor.w = 1.0f;
+	return fragmentColor;
+	
+	//return AmbientColor + SpecularColor + DiffuseColor;
+	//return vec4(VectorToDepthValue(direction), VectorToDepthValue(direction), VectorToDepthValue(direction), 1.0f) + AmbientColor;
+}
+
+vec4 CalcDirectionalLight(DirectionalLight dir)
+{
+	return LightCalculation(dir.Color, dir.AmbientIntensity, dir.DiffuseIntensity, dir.Direction, 0);
+}
+
+vec4 CalcPointLight(int i)
+{
+	// Vector from the light position to the pixel
+	vec3 direction = normalize(Position0 - PointLights[i].Position);
+	// Compute the length of the direction vector as the distance between them
+	float distance = length(direction);
+	
+	// Calculate the light for point light no. i
+	vec4 color = LightCalculation(PointLights[i].Color, PointLights[i].AmbientIntensity, PointLights[i].DiffuseIntensity, direction, i);
+	// Calculate the attenuation for the point light no. i
+	float attenuation = PointLights[i].Constant + PointLights[i].Linear / distance + PointLights[i].Exp / (distance * distance);
+	
+	// Return the attenuated color
+	return color / attenuation;
+}
+
+
+
+
+/*void main()
+{
+	float shadowValue;
+	vec4 vertexPositionLightSpace2 = vertexPositionLightSpace;
+	
+	// Perspective division
+	vertexPositionLightSpace2 /= vertexPositionLightSpace2.w;
+	
+	// Percentage closer filtering
+	for (float x = -0.01f; x <= 0.01f; x += 0.0050f)
+	{
+		for (float y = -0.01f; y <= 0.01f; y += 0.0050f)
+		{
+			if (texture2D(shadowMap, vertexPositionLightSpace2.xy + vec2(x, y)).r >= vertexPositionLightSpace2.z)
+			{
+				shadowValue += 1.0f;
+			}
+		}
+	}
+	
+	shadowValue /= 4.0f;
+	
+	// r = 1.0 not in shadow; r = 0.0 it's in shadow
+	//float shadowValue = shadow2DProj(shadowMap, vertexPositionLightSpace).r;
+	
+	color = vec4(shadowValue, shadowValue, shadowValue, 1.0f);
+}*/
+
+
+void main()
+{	
+	// Add the directional color to the final color
+	//color = CalcDirectionalLight(directionalLight);
+	
+	// Add the point lights to the final color
+	for (int i = 0; i < NumPointLights; i++)
+	{
+		color += CalcPointLight(i);
+	}
+}

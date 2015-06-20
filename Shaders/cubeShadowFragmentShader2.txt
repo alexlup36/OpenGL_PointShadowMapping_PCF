@@ -1,0 +1,378 @@
+#version 330 core
+
+// Declaration ***********************************
+struct DirectionalLight
+{
+	vec3 Color;
+	float AmbientIntensity;
+	vec3 Direction;
+	float DiffuseIntensity;
+};
+
+struct PointLight
+{
+	// Point light
+	vec3 Position;
+	vec3 Color;
+	float AmbientIntensity;
+	float DiffuseIntensity;
+	
+	// Attenuation
+	float Constant;                                                                 
+    float Linear;                                                                   
+    float Exp; 
+};
+
+
+// Uniform variables *****************************
+uniform int NumPointLights; 				// Number of point lights
+uniform sampler2D shadowMap;				// Sampler for the future texture	ok
+uniform samplerCubeShadow cubeDepthMap;		// Sampler for the depth cube map
+
+uniform DirectionalLight directionalLight;		// Structure which stores the properties of the directional light	ok
+uniform PointLight PointLights[20];				// Structure which stores the properties of the point lights	ok
+
+uniform vec3 eyePosition;				// Position of the eye in world space (position of the camera)	ok
+uniform float specularIntensity;		// Specular property	ok
+uniform float specularPower;			// Specular property	ok
+uniform int mode;
+
+// Input data ************************************
+in vec2 TexCoord0;					
+in vec3 Normal0;					
+in vec3 Position0;	
+in vec4 PositionCS;
+in vec3 NormalCS;
+in vec4 PositionLS;				
+
+// Output data ***********************************
+out vec4 color;
+
+// Auxiliary var
+/*vec3 textureSize = vec3(32.0f, 32.0f, 32.0f);
+vec3 textureSizeInv = vec3(0.03125f, 0.03125f, 0.03125f);
+vec3 halfPixel = vec3(0.5f, 0.5f, 0.5f);
+vec3 onePixel = vec3(1.0f, 1.0f, 1.0f);*/
+
+/*vec3 textureSize = vec3(64.0f, 64.0f, 64.0f);
+vec3 textureSizeInv = vec3(0.015625f, 0.015625f, 0.015625f);
+vec3 halfPixel = vec3(0.5f, 0.5f, 0.5f);
+vec3 onePixel = vec3(1.0f, 1.0f, 1.0f);*/
+
+vec3 textureSize = vec3(1024.0f, 1024.0f, 1024.0f); // best for filterCUbe
+vec3 textureSizeInv = vec3(1.024f, 1.024f, 1.024f);
+vec3 halfPixel = vec3(0.5f, 0.5f, 0.5f);
+vec3 onePixel = vec3(1.0f, 1.0f, 1.0f);
+
+// Functions *************************************
+float filterCube(vec3 VertToLightWS)
+{
+	// Multiply coordinates by the texture size
+	vec3 texPos = normalize(VertToLightWS) * textureSize;
+	
+	// Compute first integer coord
+	vec3 texPos0 = floor(texPos + halfPixel);
+	
+	// Compute second integer coord
+	vec3 texPos1 = texPos0 + 10 * onePixel;
+	
+	// Translate the tex coord into 0,1
+	texPos0 = texPos0 * textureSizeInv;
+	texPos1 = texPos1 * textureSizeInv;
+	
+	// Contributions for each coordinate
+	vec3 blend = fract(texPos + halfPixel);
+	
+	// Construct 8 new coordinates
+	vec3 texPos000 = texPos0;
+	vec3 texPos001 = vec3(texPos0.x, texPos0.y, texPos1.z);
+	vec3 texPos010 = vec3(texPos0.x, texPos1.y, texPos0.z);
+	vec3 texPos011 = vec3(texPos0.x, texPos1.y, texPos1.z);
+	vec3 texPos100 = vec3(texPos1.x, texPos0.y, texPos0.z);
+	vec3 texPos101 = vec3(texPos1.x, texPos0.y, texPos1.z);
+	vec3 texPos110 = vec3(texPos1.x, texPos1.y, texPos0.z);
+	vec3 texPos111 = texPos1;
+	
+	
+	// Sample the cube map
+	float c000 = texture(cubeDepthMap, vec4(normalize(texPos000), 1.0));
+	float c001 = texture(cubeDepthMap, vec4(normalize(texPos001), 1.0));
+	float c010 = texture(cubeDepthMap, vec4(normalize(texPos010), 1.0));
+	float c011 = texture(cubeDepthMap, vec4(normalize(texPos011), 1.0));
+	float c100 = texture(cubeDepthMap, vec4(normalize(texPos100), 1.0));
+	float c101 = texture(cubeDepthMap, vec4(normalize(texPos101), 1.0));
+	float c110 = texture(cubeDepthMap, vec4(normalize(texPos110), 1.0));
+	float c111 = texture(cubeDepthMap, vec4(normalize(texPos111), 1.0));
+	
+	float color = mix(
+		mix(mix(c000, c010, blend.y),
+		mix(c100, c110, blend.y),
+		blend.x),
+		mix(mix(c001, c011, blend.y),
+			mix(c101, c111, blend.y),
+			blend.x),
+		blend.z);
+	
+	return color;
+}
+
+
+
+float VectorToDepthValue(vec3 Vec)
+{
+    vec3 AbsVec = abs(Vec);
+    float LocalZcomp = max(AbsVec.x, max(AbsVec.y, AbsVec.z));
+
+    const float f = 1000.0f;
+    const float n = 1.0;
+    float NormZComp = (f+n) / (f-n) - (2*f*n)/(f-n)/LocalZcomp;
+    return (NormZComp + 1.0) * 0.5;
+}
+
+float ComputeShadowFactorClassic(vec3 VertToLightWS)
+{   
+    float ShadowVec = texture(cubeDepthMap, vec4(VertToLightWS, 1.0));
+    if (ShadowVec + 0.0001 > VectorToDepthValue(VertToLightWS))
+        return 1.0;
+
+    return 0.0;
+}
+
+float ComputeShadowFactorPCF1(samplerCubeShadow ShadowCubeMap, vec3 VertToLightWS)
+{   
+	// Multiply coordinates by the texture size
+	vec3 texPos = normalize(VertToLightWS) * textureSize;
+	
+	// Compute first integer coord
+	vec3 texPos0 = floor(texPos + halfPixel);
+	
+	// Compute second integer coord
+	vec3 texPos1 = texPos0 + onePixel;
+	
+	// Translate the tex coord into 0,1
+	texPos0 = texPos0 * textureSizeInv;
+	texPos1 = texPos1 * textureSizeInv;
+	
+	// Contributions for each coordinate
+	vec3 blend = fract(texPos + halfPixel);
+	
+	// Construct 8 new coordinates
+	vec3 texPos000 = texPos0;
+	vec3 texPos001 = vec3(texPos0.x, texPos0.y, texPos1.z);
+	vec3 texPos010 = vec3(texPos0.x, texPos1.y, texPos0.z);
+	vec3 texPos011 = vec3(texPos0.x, texPos1.y, texPos1.z);
+	vec3 texPos100 = vec3(texPos1.x, texPos0.y, texPos0.z);
+	vec3 texPos101 = vec3(texPos1.x, texPos0.y, texPos1.z);
+	vec3 texPos110 = vec3(texPos1.x, texPos1.y, texPos0.z);
+	vec3 texPos111 = texPos1;
+	
+	int count = 0;
+	float shadow = 0.0f;
+	
+	for (float x = texPos0.x; x < texPos1.x; x+= 0.25f)
+	{
+		for (float y = texPos0.y; y < texPos1.y; y += 0.25f)
+		{
+			for (float z = texPos0.z; z < texPos1.z; z += 0.25f)
+			{
+				if (texture(cubeDepthMap, vec4(x, y, z, 1.0f) + 0.0001f) > VectorToDepthValue(VertToLightWS))
+				{
+					shadow++;
+				}
+				count++;
+			}
+		}
+	}
+	
+	return shadow / count;
+}
+
+vec4 DirectionalLightCalculation(vec3 color,
+	float ambientIntensity,
+	float diffuseIntensity,
+	vec3 direction)
+{
+	vec4 fragmentColor = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+
+	// Normalize the normal from the vertex shader
+	vec3 normal = normalize(Normal0);
+	// Light direction
+	vec3 lightDir = normalize(direction);
+
+	// Calculate the ambient component
+	vec4 AmbientColor = vec4(color, 1.0f) * ambientIntensity;
+	
+	// Calculate the diffuse component
+	// Calculate the diffuse factor
+	float diffuseFactor = dot(normalize(Normal0), -lightDir);
+	vec4 DiffuseColor = vec4(color, 1.0f) * diffuseIntensity * max(diffuseFactor, 0.0f);
+	
+	// Calculate the specular component
+	vec3 vertexToEye = normalize(eyePosition - Position0);
+	vec3 reflection = normalize(reflect(lightDir, normal));
+	float specularFactor = max(dot(vertexToEye, reflection), 0.0f);
+	specularFactor = pow(specularFactor, specularPower);
+	vec4 SpecularColor = vec4(color, 1.0f)  * specularFactor * specularIntensity;
+	
+	// Shadow factor calculation
+	float shadowValue;
+	vec4 vertexPositionLightSpace2 = PositionLS;
+	
+	// Perspective division
+	vertexPositionLightSpace2 /= vertexPositionLightSpace2.w;
+	
+	// Percentage closer filtering
+	/*for (float x = -0.01f; x <= 0.01f; x += 0.005f)
+	{
+		for (float y = -0.01f; y <= 0.01f; y += 0.005f)
+		{
+			if (texture2D(shadowMap, vertexPositionLightSpace2.xy + vec2(x, y)).r >= vertexPositionLightSpace2.z)
+			{
+				shadowValue += 1.0f;
+			}
+		}
+	}
+	
+	shadowValue /= 16.0f;*/
+	
+	// Without percentage closer filtering
+	if (texture2D(shadowMap, vertexPositionLightSpace2.xy).r >= vertexPositionLightSpace2.z)
+	{
+		shadowValue = 1.0f;
+	}
+	else
+	{
+		shadowValue = 0.0f;
+	}
+	
+	
+	DiffuseColor *= (shadowValue + 0.05f);
+	SpecularColor = (shadowValue < 0.5f ? vec4(0.0f, 0.0f, 0.0f, 1.0f) : SpecularColor);
+	
+	// Final color of the fragment
+	fragmentColor = AmbientColor + DiffuseColor + SpecularColor;
+	fragmentColor.w = 1.0f;
+	return fragmentColor;
+}
+
+vec4 LightCalculation(vec3 color,
+	float ambientIntensity,
+	float diffuseIntensity,
+	vec3 direction,
+	int i)
+{
+	vec4 fragmentColor = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+	
+	// Transform the position into light space
+	//vec4 PositionLS = LightViewMatrix * vec4(Position0, 1.0f);
+	vec3 VertToLightWS = PointLights[i].Position - Position0;
+	
+	// Normalize the normal from the vertex shader
+	vec3 normal = normalize(Normal0);
+	// Light direction
+	vec3 lightDir = normalize(direction);
+
+	// Calculate the ambient component
+	vec4 AmbientColor = vec4(color, 1.0f) * ambientIntensity;
+	
+	// Calculate the diffuse component
+	// Calculate the diffuse factor
+	float diffuseFactor = dot(normalize(Normal0), -lightDir);
+	vec4 DiffuseColor = vec4(color, 1.0f) * diffuseIntensity * max(diffuseFactor, 0.0f);
+	
+	// Calculate the specular component
+	vec3 vertexToEye = normalize(eyePosition - Position0);
+	vec3 reflection = normalize(reflect(lightDir, normal));
+	float specularFactor = max(dot(vertexToEye, reflection), 0.0f);
+	specularFactor = pow(specularFactor, specularPower);
+	vec4 SpecularColor = vec4(color, 1.0f)  * specularFactor * specularIntensity;
+	
+	// PCF mode *******************************************************************************************
+	float shadowValue = ComputeShadowFactorPCF1(cubeDepthMap, -VertToLightWS);
+	
+	DiffuseColor *= (shadowValue + 0.5f);
+	SpecularColor = (shadowValue < 0.5f ? vec4(0.0f, 0.0f, 0.0f, 1.0f) : SpecularColor);
+	
+	// Final color of the fragment
+	fragmentColor = AmbientColor + DiffuseColor + SpecularColor;
+	fragmentColor.w = 1.0f;
+	return fragmentColor;
+	
+	// Cube map filtering  *********************************************************************************
+	/*float shadowValue = ComputeShadowFactorClassic(-VertToLightWS);
+	
+	DiffuseColor *= (shadowValue + 0.05f);
+	SpecularColor = (shadowValue <= 0.5f ? vec4(0.0f, 0.0f, 0.0f, 1.0f) : SpecularColor);
+	
+	// Final color of the fragment
+	fragmentColor = AmbientColor + DiffuseColor + SpecularColor;
+	fragmentColor.w = 1.0f;
+	return fragmentColor;*/
+}
+
+vec4 CalcDirectionalLight(DirectionalLight dir)
+{
+	//return LightCalculation(dir.Color, dir.AmbientIntensity, dir.DiffuseIntensity, dir.Direction, -1);
+	return DirectionalLightCalculation(dir.Color, dir.AmbientIntensity, dir.DiffuseIntensity, dir.Direction);
+}
+
+vec4 CalcPointLight(int i)
+{
+	vec3 direction = normalize(Position0 - PointLights[i].Position);
+	// Compute the length of the direction vector as the distance between them
+	float distance = length(direction);
+	
+	// Calculate the light for point light no. i
+	vec4 color = LightCalculation(PointLights[i].Color, PointLights[i].AmbientIntensity, PointLights[i].DiffuseIntensity, Position0 - PointLights[i].Position, i);
+	// Calculate the attenuation for the point light no. i
+	float attenuation = PointLights[i].Constant + PointLights[i].Linear / distance + PointLights[i].Exp / (distance * distance);
+	
+	// Return the attenuated color
+	return color / attenuation;
+}
+
+
+void main()
+{	
+	// Add the directional color to the final color
+	//color = CalcDirectionalLight(directionalLight);
+	
+	// Add the point lights to the final color
+	//for (int i = 0; i < NumPointLights; i++)
+	//{
+	//	color += CalcPointLight(i);
+	//}
+	color = vec4(0.0f, 0.0f, 0.0f, 0.0f);
+	
+	// Mode 1 - Direction light
+	// Mode 0 - Point Light
+	// Mode 2 - No light
+	if (mode == 1)
+	{
+		//color = CalcDirectionalLight(directionalLight);
+	}
+	else if (mode == 0)
+	{
+		color = CalcPointLight(0);
+		//color += CalcPointLight(1);
+		//color += CalcPointLight(2);
+		//color += CalcPointLight(3);
+		//color += CalcPointLight(4);
+		//color += CalcPointLight(5);
+		//color += CalcPointLight(6);
+		//color += CalcPointLight(7);
+		//color += CalcPointLight(8);
+		//color += CalcPointLight(9);
+		//color += CalcPointLight(10);
+		//color += CalcPointLight(11);
+		//color += CalcPointLight(12);
+		//color += CalcPointLight(13);
+		//color += CalcPointLight(14);
+		//color += CalcPointLight(15);
+		//color += CalcPointLight(16);
+	}
+	else if (mode == 2)
+	{
+		color = CalcPointLight(0);
+	}
+}

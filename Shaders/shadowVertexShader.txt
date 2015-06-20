@@ -1,0 +1,37 @@
+#version 330 core
+
+// Input data
+layout(location = 0) in vec3 vertexPosition;
+layout(location = 1) in vec2 texCoordinate;
+layout(location = 2) in vec3 vertexNormal;
+
+// Output data
+out vec2 TexCoord0;
+out vec3 Normal0;
+out vec3 Position0;
+
+// Uniform varialbles
+uniform mat4 MVP;	//OK
+uniform mat4 World;		//OK
+uniform mat4 MVPLight;
+
+out vec4 vertexPositionLightSpace;
+
+void main()
+{
+	// Transform the vertex position by the MVP matrix
+	vec4 v = vec4(vertexPosition, 1.0f);
+    gl_Position = MVP * v;
+	
+	// Pass the texture coordinate
+	TexCoord0 = texCoordinate;
+	
+	// Transform the vertex normal into world space
+	Normal0 = (World * vec4(vertexNormal, 0.0f)).xyz;
+	
+	// Transform the position into world space
+	Position0 = (World * vec4(vertexPosition, 1.0f)).xyz;
+	
+	// Transform the vertex position by the MVPLight matrix (into the light space)
+	vertexPositionLightSpace = MVPLight * vec4(vertexPosition, 1.0f);
+}
