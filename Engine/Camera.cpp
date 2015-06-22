@@ -7,8 +7,6 @@
 // Up		0.0f, 1.0f, 0.0f
 // NearClip 0.1f
 // FarClip  300.0f
-// WindowWidth 1024
-// WindowHeight 768
 Camera::Camera(const char* cameraName)
 	: _cameraPosition(glm::vec3(-0.371821f, 4.73271f, 15.5139f)),
 	_cameraTarget(0.0f, 0.0f, 0.0f),
@@ -16,8 +14,8 @@ Camera::Camera(const char* cameraName)
 	_nearClippingPlane(0.1f),
 	_farClippingPlane(30000.0f),
 	_FOV(45.0f),
-	_windowWidth(1024),
-	_windowHeight(768) 
+	_windowWidth(WINDOW_WIDTH),
+	_windowHeight(WINDOW_HEIGHT) 
 {
 	_horizontalAngle = 0.0f;
 	_verticalAngle = 0.0f;
@@ -143,8 +141,8 @@ void Camera::UpdateMatrices(GLFWwindow* window, float dt)
 	glfwGetCursorPos(window, &Input::xMousePos, &Input::yMousePos);
 	
 	// Update the camera angles
-	_horizontalAngle	+= Input::mouseSpeed * dt * float(1024 / 2 - Input::xMousePos);
-	_verticalAngle		+= Input::mouseSpeed * dt * float(768 / 2 - Input::yMousePos);
+	_horizontalAngle	+= Input::mouseSpeed * dt * float(WINDOW_WIDTH / 2 - Input::xMousePos);
+	_verticalAngle		+= Input::mouseSpeed * dt * float(WINDOW_HEIGHT / 2 - Input::yMousePos);
 
 	// Debug - display camera angles
 	//std::cout<<_horizontalAngle<<std::endl;

@@ -86,7 +86,6 @@ public:
 	void SetEyeWorldPos(const glm::vec3& EyeWorldPos);
     void SetSpecularIntensity(float Intensity);
     void SetSpecularPower(float Power);
-	void SetMode(int mode);
 
 private:
     GLuint _MVPLocation;

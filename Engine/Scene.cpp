@@ -14,8 +14,11 @@ Scene::Scene(GLFWwindow* window, const std::string& sceneName)//, GLuint shaderP
 	std::cout<<"Scene creation: "<<sceneName<<std::endl;
 
 	// Init shadow map dimensions
-	shadowMapWidth = 1024 * 1/4;
-	shadowMapHeight = 700 * 1/4;
+	shadowMapWidth = (unsigned int)(WINDOW_WIDTH * 1.25f);
+	shadowMapHeight = (unsigned int)(WINDOW_HEIGHT * 1.25f);
+
+	// Set the cube texture size
+	CUBE_TEXTURE_SIZE = 512;
 
 	// Rotation angle - default
 	angle = 0.0f;
@@ -25,14 +28,6 @@ Scene::Scene(GLFWwindow* window, const std::string& sceneName)//, GLuint shaderP
 	biasMatrix[1][0] = 0.0f; biasMatrix[1][1] = 0.5f; biasMatrix[1][2] = 0.0f; biasMatrix[1][3] = 0.0f;
 	biasMatrix[2][0] = 0.0f; biasMatrix[2][1] = 0.0f; biasMatrix[2][2] = 0.5f; biasMatrix[2][3] = 0.0f;
 	biasMatrix[3][0] = 0.5f; biasMatrix[3][1] = 0.5f; biasMatrix[3][2] = 0.5f; biasMatrix[3][3] = 1.0f;
-
-	// Store the directional light properties
-	cameraPosition	= glm::vec3(-4.426f, 7.615f, 10.492f);
-	cameraTarget	= glm::vec3(-4.058f, 7.231f, 9.645f);
-	cameraUp		= glm::vec3(0.153f, 0.923f, -0.352f);
-
-	// Set the cube texture size
-	CUBE_TEXTURE_SIZE = 256;
 }
 
 
@@ -73,48 +68,36 @@ void Scene::Initialize()
 	createFBO();
 
 	// Create a quad
-	quadShader->Enable();
+	/*quadShader->Enable();
 	quadToRenderTo = createQuad();
 	quadToRenderTo->LoadIntoVB();
-	quadShader->Disable();
-
-	// Error checking
-	
+	quadShader->Disable();	*/
 
 	// Enable shadow shader for light setup
 	shadowShader->Enable();
-		_Light = new Lighting(shadowShader->ProgramID());
 
-		_Light->SetMode(0);
-		// Error checking
+	_Light = new Lighting(shadowShader->ProgramID());
 		
-		// Create a directional light
-		CreateDirectionalLight(glm::vec3(2.0f, -2.0f, -2.0f));
-		// Create point lights
-		CreatePointLights();
+	// Create a directional light
+	CreateDirectionalLight(glm::vec3(2.0f, -2.0f, -2.0f));
+	// Create point lights
+	CreatePointLights();
 
-		i = glGetError();
-		if (i != 0)
-		{
-			std::cout<<"Error Lighting: "<<i<<std::endl;
-		}
+	// Error checking
+	i = glGetError();
+	if (i != 0)
+	{
+		std::cout<<"Error Lighting: "<<i<<std::endl;
+	}
 		
 	shadowShader->Disable();
 
 	// Default - translate the light sources up
 	GetObject("LightObject0")->Translate(0.0f, 4.0f, 0.0f);
-
-	GetObject("Torus")->Translate(0.0f, 2.0f, 0.0f);
-	
 	GetObject("LightObject0")->Scale(0.5f, 0.5f, 0.5f);
 	GetObject("LightObject0")->Translate(3.0f, sin(angle), 0.0f);
 
-	GetObject("LightObject1")->Translate(4.0f, 2.6f, 0.0f);
-	GetObject("LightObject1")->Scale(0.5f, 0.5f, 0.5f);
-
-	GetObject("LightObject2")->Translate(2.0f, 6.0f, -1.0f);
-	GetObject("LightObject2")->Scale(0.5f, 0.5f, 0.5f);
-	
+	GetObject("Torus")->Translate(0.0f, 2.0f, 0.0f);
 
 	// Enable depth test
 	glEnable(GL_DEPTH_TEST);
@@ -124,7 +107,7 @@ void Scene::Initialize()
 	// Cull triangles which normal is not towards the camera
 	glEnable(GL_CULL_FACE);
 
-	Text2D::InitText2D("..\\Textures\\Holstein.tga");
+	//Text2D::InitText2D("..\\Textures\\Holstein.tga");
 }
 
 // Display the scene
@@ -133,9 +116,11 @@ void Scene::Display(float dt)
 	// Reset the error
 	glGetError();
 
-	glClearColor(0.0f, 0.0f, 0.4f, 0.0f);	
+	// ---------------------------------------------------------------------------
+	// Shadow pass
+	// ---------------------------------------------------------------------------
+
 	glEnable(GL_DEPTH_TEST);
-	glClear(GL_DEPTH_BUFFER_BIT);
 
 	// Update the lights
 	UpdateLight(dt);
@@ -148,31 +133,39 @@ void Scene::Display(float dt)
 	{
 		DrawCubeFace(i);
 	}
-	
+
+	// ---------------------------------------------------------------------------
+	// Render pass
+
+	glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
 	shadowShader->Enable();
-		// Set the light properties 
-		if (_isLightOn)
-		{
-			// Update the eye position
-			_Light->SetEyeWorldPos(GetCamera(0)->GetCameraPosition());
-		}
 
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, cubeTexture);
+	// Set the light properties 
+	if (_isLightOn)
+	{
+		// Update the eye position
+		_Light->SetEyeWorldPos(GetCamera(0)->GetCameraPosition());
+	}
 
-		//Update uniform variables for shadow shader
-		glUniform1i(glGetUniformLocation(shadowShader->ProgramID(), "cubeDepthMap"), 0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, cubeTexture);
 
-		glViewport(0, 0, 1024, 768);
-		glEnable(GL_CULL_FACE);
-		glCullFace(GL_BACK);
+	//Update uniform variables for shadow shader
+	glUniform1i(glGetUniformLocation(shadowShader->ProgramID(), "cubeDepthMap"), 0);
 
-		// Display objects
-		DisplayObjects();
+	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+
+	// Display objects
+	DisplayObjects();
+
 	shadowShader->Disable();
 
-	DisplayFPS(dt);
+	//DisplayFPS(dt);
+
+	// ---------------------------------------------------------------------------
 }
 
 	
@@ -202,7 +195,7 @@ void Scene::Update(float dt)
 	if (GetObject("Torus")->IsAnimating())
 	{
 		GetObject("Torus")->Translate(0.0f, 2.0f, 0.0f);
-		GetObject("Torus")->Rotate(0.0f, 0.0f, 1.0f, 0.3f);
+		GetObject("Torus")->Rotate(0.0f, 0.0f, 1.0f, 0.003f);
 		GetObject("Torus")->Translate(0.0f, -2.0f, 0.0f);
 	}
 
@@ -210,8 +203,8 @@ void Scene::Update(float dt)
 	// Update light 0 object
 	if (GetObject("LightObject0")->IsAnimating())
 	{
-		GetObject("LightObject0")->Translate(0.04f, 0.00f, 0.02f);
-		GetObject("LightObject0")->Rotate(0.0f, 1.0f, 5 * sin(angle), 0.15f);
+		//GetObject("LightObject0")->Translate(0.04f, 0.00f, 0.02f);
+		//GetObject("LightObject0")->Rotate(0.0f, 1.0f, 5 * sin(angle), 0.15f);
 	}
 	else
 	{
@@ -239,20 +232,6 @@ void Scene::Update(float dt)
 		{
 			GetObject("LightObject0")->Translate(0.0f, -dt * 2.5f, 0.0f);
 		}
-	}
-
-	// Update the lighting mode
-	if (glfwGetKey(_window, GLFW_KEY_Q))
-	{
-		_Light->SetMode(0);
-	}
-	if (glfwGetKey(_window, GLFW_KEY_W))
-	{
-		_Light->SetMode(1);
-	}
-	if (glfwGetKey(_window, GLFW_KEY_E))
-	{
-		_Light->SetMode(2);
 	}
 }
 
@@ -367,7 +346,7 @@ Camera* Scene::CreateCamera(const char* camName)
 	Camera* newCamera = new Camera(camName);
 
 	// Set the projection matrix for the camera
-	newCamera->SetProjection(45.0f, 1024, 768, 0.1f, 30000.0f);
+	newCamera->SetProjection((float)(PI * 0.5f), WINDOW_WIDTH, WINDOW_HEIGHT, 0.1f, 30000.0f);
 
 	// If no active camera set it to the new created camera
 	if (!_activeCamera)
@@ -443,9 +422,13 @@ void Scene::DrawCubeFace(int iFace)
 
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
-		
+
+	glClearColor(FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX);
+
 	//glEnable(GL_DEPTH_TEST);
 	glClear(GL_DEPTH_BUFFER_BIT);
+
+	simpleShader->Enable();
 
 	// For each cube face go through each point light
 	for (size_t i = 0; i < pointLights.size(); i++)
@@ -488,20 +471,19 @@ void Scene::DrawCubeFace(int iFace)
 		// Update the view matrix for the point light camera
 		GetCamera("PointLight")->SetView();
 		// Set the projection matrix for the camera
-		GetCamera("PointLight")->SetProjection(90.0f, CUBE_TEXTURE_SIZE, CUBE_TEXTURE_SIZE, 1.0f, 1000.0f);
+		GetCamera("PointLight")->SetProjection((float)(PI * 0.5f), CUBE_TEXTURE_SIZE, CUBE_TEXTURE_SIZE, 0.1f, 30000.0f);
 		// Set the camera as active
 		SetActiveCamera(GetCamera("PointLight"));
-
-		simpleShader->Enable();	
-			DisplayDepthMap();
-		simpleShader->Disable();
+	
+		DisplayDepthMap();
 	}
+	simpleShader->Disable();
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	glDisable(GL_CULL_FACE);
 	SetActiveCamera(GetCamera(0));
-	glViewport(0, 0, 1024, 700);
+	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 }
 
 // Get the image from the light's position
@@ -553,7 +535,7 @@ void Scene::GetImageFromLightPosition(float dt)
 
 	glDisable(GL_CULL_FACE);
 	SetActiveCamera(GetCamera(0));
-	glViewport(0, 0, 1024, 700);
+	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 }
 
 void Scene::CreateDirectionalLight(glm::vec3 direction)
@@ -592,24 +574,24 @@ void Scene::CreatePointLights()
 		0.7f));
 
 	// Data for point light 2
-	pointLights.push_back(PointLight(
-		glm::vec3(4.0f, 2.6f, 0.0f),
-		glm::vec3(0.0f, 0.0f, 1.0f),
-		1.0f, 
-		0.7f,
-		1.8f,
-		0.8f,
-		0.4f));
+	//pointLights.push_back(PointLight(
+	//	glm::vec3(4.0f, 2.6f, 0.0f),
+	//	glm::vec3(0.0f, 0.0f, 1.0f),
+	//	1.0f, 
+	//	0.7f,
+	//	1.8f,
+	//	0.8f,
+	//	0.4f));
 
-	// Data for point light 3
-	pointLights.push_back(PointLight(
-		glm::vec3(2.0f, 6.0f, -1.0f),
-		glm::vec3(0.0f, 1.0f, 0.0f),
-		1.0f, 
-		0.7f,
-		1.8f,
-		0.9f,
-		0.3f));
+	//// Data for point light 3
+	//pointLights.push_back(PointLight(
+	//	glm::vec3(2.0f, 6.0f, -1.0f),
+	//	glm::vec3(0.0f, 1.0f, 0.0f),
+	//	1.0f, 
+	//	0.7f,
+	//	1.8f,
+	//	0.9f,
+	//	0.3f));
 
 	// Set the point lights
 	_Light->SetPointLights(pointLights);
@@ -677,35 +659,16 @@ GLuint Scene::createFBO()
 	glGenFramebuffers(1, &FBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 
-
 	// Create a texture
-	//renderTexture = createTexture(shadowMapWidth, shadowMapHeight, false);
-	//depthTexture = createTexture(1024, 768, true);
 	shadowMapTexture = createTexture(shadowMapWidth, shadowMapHeight, true);
-	
 	cubeTexture = createCubeTexture(CUBE_TEXTURE_SIZE, CUBE_TEXTURE_SIZE);
+
 	int i = glGetError();
 	if (i != 0)
 	{
 		std::cout<<"Error at quad geometry: "<<i<<std::endl;
 	}
-	// Attach a texture
-	// When a texture i attached the rendering is done to the texture
-	// Attachement - GL_COLOR_ATTACHEMENT0, 1
-	//				- GL_DEPTH_ATTACHEMENT0
-	//glFramebufferTexture2D(
-	//	GL_FRAMEBUFFER,
-	//	GL_COLOR_ATTACHMENT0,
-	//	GL_TEXTURE_2D,
-	//	renderTexture,
-	//	0);
 
-	//glFramebufferTexture2D(
-	//	GL_FRAMEBUFFER,
-	//	GL_DEPTH_ATTACHMENT,
-	//	GL_TEXTURE_2D,
-	//	depthTexture,
-	//	0);// Detach the framebuffer
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	
 	// Check for errors
@@ -782,7 +745,7 @@ GLuint Scene::createCubeTexture(int w, int h)
     glGenTextures(1, &cubeTexture);
     glBindTexture(GL_TEXTURE_CUBE_MAP, cubeTexture);
 
-   /* glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 0);
+    /*glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 0);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_LEVEL, 0);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);*/
@@ -793,17 +756,35 @@ GLuint Scene::createCubeTexture(int w, int h)
 //	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 //glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 //glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 0);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_LEVEL, 0);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_DEPTH_TEXTURE_MODE, GL_LUMINANCE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
-
+	
 	int i = glGetError();
+	if (i != 0)
+	{
+		std::cout << "Error at tex param: " << i << std::endl;
+	}
+	
+	//glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	//glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	//glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	//glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	//glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	//glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_DEPTH_TEXTURE_MODE, GL_LUMINANCE);
+	//glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
+	//glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+
+	i = glGetError();
 	if (i != 0)
 	{
 		std::cout<<"Error at cube tex: "<<i<<std::endl;
@@ -826,6 +807,12 @@ GLuint Scene::createCubeTexture(int w, int h)
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	
+	i = glGetError();
+	if (i != 0)
+	{
+		std::cout << "Error at texture: " << i << std::endl;
+	}
+
 	return cubeTexture;
 }
 

@@ -1,9 +1,5 @@
 #include "Engine.h"
 
-// Initialize screen dimension
-unsigned int Engine::WindowWidth	= 1024;
-unsigned int Engine::WindowHeight	= 700;
-
 Engine::Engine(void)
 {
 }
@@ -98,7 +94,7 @@ int Engine::InitializeWindow()
 	}
 
 	// Create a windowed mode window and its OpenGL context
-	window = glfwCreateWindow(Engine::WindowWidth, Engine::WindowHeight, "GLSL", NULL, NULL);
+	window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "GLSL", NULL, NULL);
 	if (!window)
 	{
 		glfwTerminate();

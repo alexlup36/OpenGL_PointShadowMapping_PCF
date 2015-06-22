@@ -1,4 +1,4 @@
-#version 450
+#version 330 core
 
 // Declaration ***********************************
 struct DirectionalLight
@@ -168,11 +168,11 @@ float ComputeShadowFactorPCF1(samplerCubeShadow ShadowCubeMap, vec3 VertToLightW
 	int count = 0;
 	float shadow = 0.0f;
 	
-	for (float x = texPos0.x; x < texPos1.x; x += 0.1f)
+	for (float x = texPos0.x; x < texPos1.x; x+= 0.25f)
 	{
-		for (float y = texPos0.y; y < texPos1.y; y += 0.1f)
+		for (float y = texPos0.y; y < texPos1.y; y += 0.25f)
 		{
-			for (float z = texPos0.z; z < texPos1.z; z += 0.1f)
+			for (float z = texPos0.z; z < texPos1.z; z += 0.25f)
 			{
 				if (texture(cubeDepthMap, vec4(x, y, z, 1.0f) + 0.0001f) > VectorToDepthValue(VertToLightWS))
 				{
@@ -287,7 +287,7 @@ vec4 LightCalculation(vec3 color,
 	vec4 SpecularColor = vec4(color, 1.0f)  * specularFactor * specularIntensity;
 	
 	// PCF mode *******************************************************************************************
-	float shadowValue = ComputeShadowFactorPCF1(cubeDepthMap, -VertToLightWS);
+	/*float shadowValue = ComputeShadowFactorPCF1(cubeDepthMap, -VertToLightWS);
 	
 	DiffuseColor *= (shadowValue + 0.5f);
 	SpecularColor = (shadowValue < 0.5f ? vec4(0.0f, 0.0f, 0.0f, 1.0f) : SpecularColor);
@@ -295,10 +295,10 @@ vec4 LightCalculation(vec3 color,
 	// Final color of the fragment
 	fragmentColor = AmbientColor + DiffuseColor + SpecularColor;
 	fragmentColor.w = 1.0f;
-	return fragmentColor;
+	return fragmentColor;*/
 	
 	// Cube map filtering  *********************************************************************************
-	/*float shadowValue = ComputeShadowFactorClassic(-VertToLightWS);
+	float shadowValue = ComputeShadowFactorClassic(-VertToLightWS);
 	
 	DiffuseColor *= (shadowValue + 0.05f);
 	SpecularColor = (shadowValue <= 0.5f ? vec4(0.0f, 0.0f, 0.0f, 1.0f) : SpecularColor);
@@ -306,7 +306,7 @@ vec4 LightCalculation(vec3 color,
 	// Final color of the fragment
 	fragmentColor = AmbientColor + DiffuseColor + SpecularColor;
 	fragmentColor.w = 1.0f;
-	return fragmentColor;*/
+	return fragmentColor;
 }
 
 vec4 CalcDirectionalLight(DirectionalLight dir)

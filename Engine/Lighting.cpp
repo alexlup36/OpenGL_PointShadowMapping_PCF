@@ -146,8 +146,3 @@ void Lighting::SetSpecularPower(float Power)
 {
 	glUniform1f(_SpecularPowerLocation, Power);
 }
-
-void Lighting::SetMode(int mode)
-{
-	glUniform1i(_modeLocation, mode);
-}
