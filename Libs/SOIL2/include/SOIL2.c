@@ -18,6 +18,10 @@
 
 #define SOIL_CHECK_FOR_GL_ERRORS 0
 
+#if defined ( linux ) || defined( __linux__ ) || defined( __FreeBSD__ ) || defined(__OpenBSD__) || defined( __NetBSD__ ) || defined( __DragonFly__ ) || defined( __SVR4 )
+#define SOIL_X11_PLATFORM
+#endif
+
 #if defined( __APPLE_CC__ ) || defined ( __APPLE__ )
 	#include <TargetConditionals.h>
 
@@ -29,12 +33,10 @@
 	#endif
 #elif defined( __ANDROID__ ) || defined( ANDROID )
 	#define SOIL_PLATFORM_ANDROID
-#elif ( defined ( linux ) || defined( __linux__ ) || defined( __FreeBSD__ ) || defined(__OpenBSD__) || defined( __NetBSD__ ) || defined( __DragonFly__ ) || defined( __SVR4 ) )
-	#define SOIL_X11_PLATFORM
 #endif
 
 #if ( defined( SOIL_PLATFORM_IOS ) || defined( SOIL_PLATFORM_ANDROID ) ) && ( !defined( SOIL_GLES1 ) && !defined( SOIL_GLES2 ) )
-	#define SOIL_GLES2
+	#define SOIL_GLES1
 #endif
 
 #if ( defined( SOIL_GLES2 ) || defined( SOIL_GLES1 ) ) && !defined( SOIL_NO_EGL ) && !defined( SOIL_PLATFORM_IOS )
@@ -100,12 +102,7 @@
 #define GL_BGRA                                             0x80E1
 #endif
 
-#ifndef GL_RG
-#define GL_RG                             0x8227
-#endif
-
 #include "SOIL2.h"
-#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
@@ -1613,18 +1610,10 @@ unsigned int
 		switch( channels )
 		{
 		case 1:
-			#if defined( SOIL_X11_PLATFORM ) || defined( SOIL_PLATFORM_WIN32 ) || defined( SOIL_PLATFORM_OSX )
-			original_texture_format = isAtLeastGL3() ? GL_RED : GL_LUMINANCE;
-			#else
 			original_texture_format = GL_LUMINANCE;
-			#endif
 			break;
 		case 2:
-			#if defined( SOIL_X11_PLATFORM ) || defined( SOIL_PLATFORM_WIN32 ) || defined( SOIL_PLATFORM_OSX )
-			original_texture_format = isAtLeastGL3() ? GL_RG : GL_LUMINANCE_ALPHA;
-			#else
 			original_texture_format = GL_LUMINANCE_ALPHA;
-			#endif
 			break;
 		case 3:
 			original_texture_format = GL_RGB;

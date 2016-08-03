@@ -35,16 +35,22 @@ GLuint Text2D::LoadTGAFile(const char* imagepath)
 	}
 
 	// Nice tri-linear filtering.
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	
 	// Set texture data
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, uiWidth, uiHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, sImageData);
 
 	// Enable mipmaps
 	glGenerateMipmap(GL_TEXTURE_2D);
+
+	if (sImageData != nullptr)
+	{
+		SOIL_free_image_data(sImageData);
+		sImageData = nullptr;
+	}
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -55,11 +61,9 @@ GLuint Text2D::LoadTGAFile(const char* imagepath)
 
 void Text2D::InitText2D(const char* texturePath)
 {
-	textShader = new Shader("..\\Shaders\\TextVertexShader.txt", "..\\Shaders\\TextFragmentShader.txt");
+	textShader = new Shader(".\\Shaders\\TextVertexShader.txt", ".\\Shaders\\TextFragmentShader.txt");
 	textShader->LoadShaders();
-
-	textShader->Enable();
-
+	
 	// Initialize texture
 	Text2DTextureID = LoadTGAFile(texturePath);
 
@@ -67,9 +71,10 @@ void Text2D::InitText2D(const char* texturePath)
 	glGenBuffers(1, &Text2DVertexBufferID);
 	glGenBuffers(1, &Text2DUVBufferID);
 
-	Text2DShaderID = textShader->ProgramID();
-
 	// Initialize uniforms' IDs
+	textShader->Enable();
+
+	Text2DShaderID = textShader->ProgramID();
 	Text2DUniformID = glGetUniformLocation(Text2DShaderID, "myTextureSampler");
 
 	textShader->Disable();
@@ -103,10 +108,10 @@ void Text2D::PrintText2D(const char * text, int x, int y, int size)
 		float uv_x = (character % 16) / 16.0f;
 		float uv_y = (character / 16) / 16.0f;
 
-		glm::vec2 uv_up_left    = glm::vec2( uv_x           , 1.0f - uv_y );
-		glm::vec2 uv_up_right   = glm::vec2( uv_x+1.0f/16.0f, 1.0f - uv_y );
-		glm::vec2 uv_down_right = glm::vec2( uv_x+1.0f/16.0f, 1.0f - (uv_y + 1.0f/16.0f) );
-		glm::vec2 uv_down_left  = glm::vec2( uv_x           , 1.0f - (uv_y + 1.0f/16.0f) );
+		glm::vec2 uv_up_left    = glm::vec2( uv_x           , uv_y );
+		glm::vec2 uv_up_right   = glm::vec2( uv_x+1.0f/16.0f, uv_y );
+		glm::vec2 uv_down_right = glm::vec2( uv_x+1.0f/16.0f, (uv_y + 1.0f/16.0f) );
+		glm::vec2 uv_down_left  = glm::vec2( uv_x           , (uv_y + 1.0f/16.0f) );
 		UVs.push_back(uv_up_left   );
 		UVs.push_back(uv_down_left );
 		UVs.push_back(uv_up_right  );
@@ -115,6 +120,10 @@ void Text2D::PrintText2D(const char * text, int x, int y, int size)
 		UVs.push_back(uv_up_right);
 		UVs.push_back(uv_down_left);
 	}
+
+	GLuint vao;
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
 
 	glBindBuffer(GL_ARRAY_BUFFER, Text2DVertexBufferID);
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec2), &vertices[0], GL_STATIC_DRAW);
@@ -150,6 +159,8 @@ void Text2D::PrintText2D(const char * text, int x, int y, int size)
 
 	glDisableVertexAttribArray(0);
 	glDisableVertexAttribArray(1);
+
+	glBindVertexArray(0);
 
 	textShader->Disable();
 }

@@ -119,6 +119,7 @@ void Lighting::SetPointLights(std::vector<PointLight>& Lights)
 		glUniform3f(pointLightsLocation[i].Color, Lights[i].Color.x, Lights[i].Color.y, Lights[i].Color.z);
 		glUniform3f(pointLightsLocation[i].Position, Lights[i].Position.x, Lights[i].Position.y, Lights[i].Position.z);
 		glUniform1f(pointLightsLocation[i].DiffuseIntensity, Lights[i].DiffuseIntensity);
+		glUniform1f(pointLightsLocation[i].AmbientIntensity, Lights[i].AmbientIntensity);
 
 		// Set the light attenuation properties
 		glUniform1f(pointLightsLocation[i].Atten.Constant, Lights[i].Attenuation.Constant);

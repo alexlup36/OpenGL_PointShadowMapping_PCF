@@ -17,7 +17,7 @@ Camera::Camera(const char* cameraName)
 	_windowWidth(WINDOW_WIDTH),
 	_windowHeight(WINDOW_HEIGHT) 
 {
-	_horizontalAngle = 0.0f;
+	_horizontalAngle = -PI;// 0.0f;
 	_verticalAngle = 0.0f;
 
 	CameraName = new char[strlen(cameraName) + 1];

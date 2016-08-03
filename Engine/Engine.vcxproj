@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -26,21 +26,21 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -53,30 +53,32 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(SolutionDir)\Libs\glm;$(SolutionDir)\Libs\glfw\include;$(SolutionDir)\Libs\glew\include;$(SolutionDir)\Libs\SOIL2\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)\Libs\glew\lib\Win32;$(SolutionDir)\Libs\glfw\lib\Win32;$(SolutionDir)\Libs\SOIL2\lib\Win32\Debug;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LibraryPath>$(SolutionDir)\Libs\glew\lib\Win64;$(SolutionDir)\Libs\glfw\lib\Win64;$(SolutionDir)\Libs\SOIL2\lib\x64\Debug;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(SolutionDir)\Libs\glm;$(SolutionDir)\Libs\glew\include;$(SolutionDir)\Libs\glfw\include;$(IncludePath);$(SolutionDir)\Libs\SOIL2\include</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
+    <IncludePath>$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(SolutionDir)\Libs\glew\include;$(SolutionDir)\Libs\glfw\include;$(SolutionDir)\Libs\glm;$(IncludePath);$(SolutionDir)\Libs\SOIL2\include</IncludePath>
-    <LibraryPath>$(SolutionDir)\Libs\glew\lib\Win64;$(SolutionDir)\Libs\glfw\lib\Win64;$(SolutionDir)\Libs\SOIL2\lib\x64\Release;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(SolutionDir)\Libs\glew\include;$(SolutionDir)\Libs\glfw\include;$(SolutionDir)\Libs\glm;$(SolutionDir)\Libs\SOIL2\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)\Libs\glew\lib\Win32;$(SolutionDir)\Libs\glfw\lib\Win32;$(SolutionDir)\Libs\SOIL2\lib\Win32\Release;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <AdditionalIncludeDirectories>$(SolutionDir)\Libs\glm;$(SolutionDir)\Libs\glfw\include;$(SolutionDir)\Libs\glew\include;$(SolutionDir)\Libs\SOIL2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>opengl32.lib;glew32.lib;glew32s.lib;glew32mx.lib;glew32mxs.lib;glfw3.lib;glfw3dll.lib;soil2-debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;glew32.lib;glew32s.lib;glfw3.lib;glfw3dll.lib;soil2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)\Libs\glew\lib\Win32;$(SolutionDir)\Libs\glfw\lib\Win32;$(SolutionDir)\Libs\SOIL2\lib\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -85,23 +87,33 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>$(SolutionDir)\Libs\glm;$(SolutionDir)\Libs\glfw\include;$(SolutionDir)\Libs\glew\include;$(SolutionDir)\Libs\SOIL2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>opengl32.lib;glew32.lib;glew32s.lib;glew32mx.lib;glew32mxs.lib;glfw3.lib;glfw3dll.lib;soil2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;glew32.lib;glew32s.lib;glfw3.lib;glfw3dll.lib;soil2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)\Libs\glew\lib\Win32;$(SolutionDir)\Libs\glfw\lib\Win32;$(SolutionDir)\Libs\SOIL2\lib\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Link>
-      <AdditionalDependencies>opengl32.lib;glew32.lib;glew32s.lib;glew32mx.lib;glew32mxs.lib;glfw3.lib;glfw3dll.lib;soil2-debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;glew32.lib;glew32s.lib;glfw3.lib;glfw3dll.lib;soil2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)\Libs\glew\lib\Win64;$(SolutionDir)\Libs\glfw\lib\Win64;$(SolutionDir)\Libs\SOIL2\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(SolutionDir)\Libs\glm;$(SolutionDir)\Libs\glfw\include;$(SolutionDir)\Libs\glew\include;$(SolutionDir)\Libs\SOIL2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Link>
-      <AdditionalDependencies>opengl32.lib;glew32.lib;glew32s.lib;glew32mx.lib;glew32mxs.lib;glfw3.lib;glfw3dll.lib;soil2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;glew32.lib;glew32s.lib;glfw3.lib;glfw3dll.lib;soil2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)\Libs\glew\lib\Win64;$(SolutionDir)\Libs\glfw\lib\Win64;$(SolutionDir)\Libs\SOIL2\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(SolutionDir)\Libs\glm;$(SolutionDir)\Libs\glfw\include;$(SolutionDir)\Libs\glew\include;$(SolutionDir)\Libs\SOIL2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />

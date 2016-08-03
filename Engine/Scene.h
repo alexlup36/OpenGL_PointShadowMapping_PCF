@@ -143,8 +143,6 @@ private:
 	Shader* shadowShader;
 	Shader* cubeShader;
 
-	Shader* textShader;
-
 	GLuint quad_vertexbuffer;
 
 	// Camera

@@ -4,6 +4,8 @@
 
 int main()
 {
+	// ------------------------------------------------------------------------
+
 	// Create the engine
 	Engine* engine = new Engine();
 
@@ -13,6 +15,7 @@ int main()
 		fprintf(stderr, "Failed to initialize the window\n");
 		return 0;
 	}
+
 	// Set the properties of the engine's window
 	engine->SetWindowProperties("TechDemo");
 
@@ -20,6 +23,7 @@ int main()
 	engine->SetUpScene();
 
 	engine->Run();
+
 	delete engine;
 
 	return 0;

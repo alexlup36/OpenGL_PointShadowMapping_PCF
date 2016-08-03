@@ -10,11 +10,10 @@ enum {
 	STBI_tga	= 5,
 	STBI_psd	= 6,
 	STBI_pic	= 7,
-	STBI_pnm	= 8,
-	STBI_dds	= 9,
-	STBI_pvr	= 10,
-	STBI_pkm	= 11,
-	STBI_hdr	= 12
+	STBI_dds	= 8,
+	STBI_pvr	= 9,
+	STBI_pkm	= 10,
+	STBI_hdr	= 11
 };
 
 extern int      stbi_test_from_memory      (stbi_uc const *buffer, int len);

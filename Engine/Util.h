@@ -24,3 +24,6 @@ void printMat4(glm::mat4& m);
 
 void printVector2(std::vector<glm::vec2>& vec);
 void printVector3(std::vector<glm::vec3>& vec);
+
+void checkGLError(const char* file, int line);
+#define check_gl_error() checkGLError(__FILE__, __LINE__)

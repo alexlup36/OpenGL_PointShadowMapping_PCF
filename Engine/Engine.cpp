@@ -45,33 +45,27 @@ void Engine::SetUpScene()
 	
 	// Create an object
 	mainScene->CreateObject("StaticScene", NULL, NULL);
-	mainScene->GetObject("StaticScene")->LoadObj("..\\Models\\mymodelsimple.obj");
+	mainScene->GetObject("StaticScene")->LoadObj(".\\Models\\mymodelsimple.obj");
 
 	mainScene->CreateObject("Torus", NULL, NULL);
-	mainScene->GetObject("Torus")->LoadObj("..\\Models\\torus.obj");
+	mainScene->GetObject("Torus")->LoadObj(".\\Models\\torus.obj");
 
 	mainScene->CreateObject("LightObject0", NULL, NULL);
-	mainScene->GetObject("LightObject0")->LoadObj("..\\Models\\light.obj");
+	mainScene->GetObject("LightObject0")->LoadObj(".\\Models\\light.obj");
 
-	mainScene->CreateObject("LightObject1", NULL, NULL);
-	mainScene->GetObject("LightObject1")->LoadObj("..\\Models\\light.obj");
+	/*mainScene->CreateObject("LightObject1", NULL, NULL);
+	mainScene->GetObject("LightObject1")->LoadObj(".\\Models\\light.obj");
 
 	mainScene->CreateObject("LightObject2", NULL, NULL);
-	mainScene->GetObject("LightObject2")->LoadObj("..\\Models\\light.obj");
-
+	mainScene->GetObject("LightObject2")->LoadObj(".\\Models\\light.obj");*/
 
 	mainScene->GetObject("StaticScene")->LoadIntoVB();
 	mainScene->GetObject("Torus")->LoadIntoVB();
 	mainScene->GetObject("LightObject0")->LoadIntoVB();
-	mainScene->GetObject("LightObject1")->LoadIntoVB();
-	mainScene->GetObject("LightObject2")->LoadIntoVB();
+	//mainScene->GetObject("LightObject1")->LoadIntoVB();
+	//mainScene->GetObject("LightObject2")->LoadIntoVB();
 	
-	// Attach the shader to the object
-	//mainScene->GetObject("StaticScene")->SetShader(shaderProgram, programID);
-	//mainScene->GetObject("Object2")->SetShader(shaderProgram, programID);
-
 	// Run the initialize code (lighting)
-	
 	int i = glGetError();
 	if (i != 0)
 	{

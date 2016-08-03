@@ -35,3 +35,56 @@ void printVector3(std::vector<glm::vec3>& vec)
 		printVec3(vec[i]);
 	}
 }
+
+void checkGLError(const char* file, int line)
+{
+	GLenum error(glGetError());
+
+	while (error != GL_NO_ERROR)
+	{
+		std::string errorMessage;
+
+		switch (error)
+		{
+		case GL_INVALID_OPERATION:
+		{
+			errorMessage = "INVALID_OPERATION";
+			break;
+		}
+		case GL_INVALID_ENUM:
+		{
+			errorMessage = "INVALID_ENUM";
+			break;
+		}
+		case GL_INVALID_VALUE:
+		{
+			errorMessage = "INVALID_VALUE";
+			break;
+		}
+		case GL_INVALID_FRAMEBUFFER_OPERATION:
+		{
+			errorMessage = "INVALID_FRAMEBUFFER_OPERATION";
+			break;
+		}
+		case GL_OUT_OF_MEMORY:
+		{
+			errorMessage = "OUT_OF_MEMORY";
+			break;
+		}
+		case GL_STACK_UNDERFLOW:
+		{
+			errorMessage = "STACK_UNDERFLOW";
+			break;
+		}
+		case GL_STACK_OVERFLOW:
+		{
+			errorMessage = "STACK_OVERFLOW";
+			break;
+		}
+		}
+
+		printf("GL_%s - File %s : line %d\n", errorMessage.c_str(), file, line);
+
+		error = glGetError();
+	}
+}

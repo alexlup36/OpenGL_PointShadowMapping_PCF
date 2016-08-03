@@ -249,7 +249,7 @@ bool Object::ParseObj(const char* path, std::vector<glm::vec3>& vertices, std::v
 	{
 		char line[256];
 
-		int res = fscanf_s(file, "%s", line);
+		int res = fscanf_s(file, "%s", line, _countof(line));
 		if (res == EOF)
 		{
 			break;

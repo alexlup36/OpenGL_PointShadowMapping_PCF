@@ -14,8 +14,8 @@ Scene::Scene(GLFWwindow* window, const std::string& sceneName)//, GLuint shaderP
 	std::cout<<"Scene creation: "<<sceneName<<std::endl;
 
 	// Init shadow map dimensions
-	shadowMapWidth = (unsigned int)(WINDOW_WIDTH * 1.25f);
-	shadowMapHeight = (unsigned int)(WINDOW_HEIGHT * 1.25f);
+	shadowMapWidth = (unsigned int)(WINDOW_WIDTH * 0.5f);
+	shadowMapHeight = (unsigned int)(WINDOW_HEIGHT * 0.5f);
 
 	// Set the cube texture size
 	CUBE_TEXTURE_SIZE = 512;
@@ -93,9 +93,17 @@ void Scene::Initialize()
 	shadowShader->Disable();
 
 	// Default - translate the light sources up
-	GetObject("LightObject0")->Translate(0.0f, 4.0f, 0.0f);
+	GetObject("LightObject0")->Translate(3.0f, 4.0f, 0.0f);
 	GetObject("LightObject0")->Scale(0.5f, 0.5f, 0.5f);
 	GetObject("LightObject0")->Translate(3.0f, sin(angle), 0.0f);
+
+	/*GetObject("LightObject1")->Translate(0.0f, 4.0f, 0.0f);
+	GetObject("LightObject1")->Scale(0.5f, 0.5f, 0.5f);
+	GetObject("LightObject1")->Translate(3.0f, sin(angle), 0.0f);*/
+
+	/*GetObject("LightObject2")->Translate(-3.0f, 4.0f, 0.0f);
+	GetObject("LightObject2")->Scale(0.5f, 0.5f, 0.5f);
+	GetObject("LightObject2")->Translate(3.0f, sin(angle), 0.0f);*/
 
 	GetObject("Torus")->Translate(0.0f, 2.0f, 0.0f);
 
@@ -107,7 +115,7 @@ void Scene::Initialize()
 	// Cull triangles which normal is not towards the camera
 	glEnable(GL_CULL_FACE);
 
-	//Text2D::InitText2D("..\\Textures\\Holstein.tga");
+	Text2D::InitText2D("Holstein.tga");
 }
 
 // Display the scene
@@ -163,7 +171,7 @@ void Scene::Display(float dt)
 
 	shadowShader->Disable();
 
-	//DisplayFPS(dt);
+	DisplayFPS(dt);
 
 	// ---------------------------------------------------------------------------
 }
@@ -297,13 +305,14 @@ void Scene::DisplayObjects()
 {
 	_objectListIterator = _objectList.begin();
 	
-	
 	while (_objectListIterator != _objectList.end())
 	{
+		Camera* currentCamera = GetCamera(0);
+
 		// Compute the matrices
-		glm::mat4 MVP = GetCamera(0)->ProjectionMatrix() * GetCamera(0)->ViewMatrix() * (*_objectListIterator)->GetModel();
+		glm::mat4 MVP = currentCamera->ProjectionMatrix() * currentCamera->ViewMatrix() * (*_objectListIterator)->GetModel();
 		glm::mat4 World = (*_objectListIterator)->GetModel();
-		glm::mat4 ModelView = GetCamera(0)->ViewMatrix() * (*_objectListIterator)->GetModel();
+		glm::mat4 ModelView = currentCamera->ViewMatrix() * (*_objectListIterator)->GetModel();
 		
 		// Set uniforms
 		_Light->SetWorld((*_objectListIterator)->GetModel());
@@ -346,7 +355,7 @@ Camera* Scene::CreateCamera(const char* camName)
 	Camera* newCamera = new Camera(camName);
 
 	// Set the projection matrix for the camera
-	newCamera->SetProjection((float)(PI * 0.5f), WINDOW_WIDTH, WINDOW_HEIGHT, 0.1f, 30000.0f);
+	newCamera->SetProjection((float)(PI * 0.25f), WINDOW_WIDTH, WINDOW_HEIGHT, 0.1f, 3000.0f);
 
 	// If no active camera set it to the new created camera
 	if (!_activeCamera)
@@ -471,7 +480,7 @@ void Scene::DrawCubeFace(int iFace)
 		// Update the view matrix for the point light camera
 		GetCamera("PointLight")->SetView();
 		// Set the projection matrix for the camera
-		GetCamera("PointLight")->SetProjection((float)(PI * 0.5f), CUBE_TEXTURE_SIZE, CUBE_TEXTURE_SIZE, 0.1f, 30000.0f);
+		GetCamera("PointLight")->SetProjection((float)(PI * 0.5f), CUBE_TEXTURE_SIZE, CUBE_TEXTURE_SIZE, 1.0f, 25.0f);
 		// Set the camera as active
 		SetActiveCamera(GetCamera("PointLight"));
 	
@@ -565,33 +574,33 @@ void Scene::CreatePointLights()
 {
 	// Data for point light 1
 	pointLights.push_back(PointLight(
-		glm::vec3(0.0f, 0.0f, 3.0f),
+		glm::vec3(3.0f, 0.0f, 3.0f),
 		glm::vec3(1.0f, 1.0f, 1.0f),
 		1.0f,
 		0.7f,
 		1.8f,
-		0.9f,
+		0.3f,
 		0.7f));
 
 	// Data for point light 2
-	//pointLights.push_back(PointLight(
-	//	glm::vec3(4.0f, 2.6f, 0.0f),
-	//	glm::vec3(0.0f, 0.0f, 1.0f),
-	//	1.0f, 
-	//	0.7f,
-	//	1.8f,
-	//	0.8f,
-	//	0.4f));
+	/*pointLights.push_back(PointLight(
+		glm::vec3(2.0f, 0.0f, -3.0f),
+		glm::vec3(0.0f, 0.0f, 1.0f),
+		1.0f, 
+		0.7f,
+		1.8f,
+		0.8f,
+		0.4f));*/
 
-	//// Data for point light 3
-	//pointLights.push_back(PointLight(
-	//	glm::vec3(2.0f, 6.0f, -1.0f),
-	//	glm::vec3(0.0f, 1.0f, 0.0f),
-	//	1.0f, 
-	//	0.7f,
-	//	1.8f,
-	//	0.9f,
-	//	0.3f));
+	// Data for point light 3
+	/*pointLights.push_back(PointLight(
+		glm::vec3(2.0f, 6.0f, -1.0f),
+		glm::vec3(0.0f, 1.0f, 0.0f),
+		1.0f, 
+		0.7f,
+		1.8f,
+		0.9f,
+		0.3f));*/
 
 	// Set the point lights
 	_Light->SetPointLights(pointLights);
@@ -721,20 +730,16 @@ Mesh* Scene::createQuad()
 
 void Scene::LoadShaders()
 {
-	// Load the text shader 
-	textShader = new Shader("..\\Shaders\\TextVertexShader.txt", "..\\Shaders\\TextFragmentShader.txt");
-	textShader->LoadShaders();
-
 	// Load the quad shader
-	quadShader = new Shader("..\\Shaders\\quadVertexShader.txt", "..\\Shaders\\quadFragmentShader.txt");
+	quadShader = new Shader(".\\Shaders\\quadVertexShader.txt", ".\\Shaders\\quadFragmentShader.txt");
 	quadShader->LoadShaders();
 
 	// Load the simple shader
-	simpleShader = new Shader("..\\Shaders\\simpleVertexShader.txt", "..\\Shaders\\simpleFragmentShader.txt");
+	simpleShader = new Shader(".\\Shaders\\simpleVertexShader.txt", ".\\Shaders\\simpleFragmentShader.txt");
 	simpleShader->LoadShaders();
 
 	// Load the shadow shader
-	shadowShader = new Shader("..\\Shaders\\cubeShadowVertexShader2.txt", "..\\Shaders\\cubeShadowFragmentShader2.txt");
+	shadowShader = new Shader(".\\Shaders\\cubeShadowVertexShader2.txt", ".\\Shaders\\cubeShadowFragmentShader2.txt");
 	shadowShader->LoadShaders();
 }
 
