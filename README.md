@@ -12,3 +12,5 @@ P - enable/disable light control
 I,J,K,L - move light (when the control is enabled)
 U - move light down (when the control is enabled)
 O - move light up (when the control is enabled)
+
+Build located in build.zip
